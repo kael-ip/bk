@@ -158,13 +158,14 @@ func (w *robustWriter) Close() {
 	tmpPath := w.path + ".tmp"
 	r, err := os.Open(tmpPath)
 	log.CheckError(err)
-	defer r.Close()
 	info, err := r.Stat()
 	log.CheckError(err)
 
 	// Write the encoding to a temporary file to be sure we don't have an
 	// incomplete one.
-	rsw, err := os.Create(w.path + ".rs.tmp")
+	rsPath := w.path+".rs"
+	rstmpPath := rsPath + ".tmp"
+	rsw, err := os.Create(rstmpPath)
 	log.CheckError(err)
 
 	const nDataShards = 17
@@ -174,11 +175,12 @@ func (w *robustWriter) Close() {
 	log.CheckError(err)
 	log.CheckError(rsw.Sync())
 	log.CheckError(rsw.Close())
-	log.CheckError(os.Rename(w.path+".rs.tmp", w.path+".rs"))
+	log.CheckError(os.Rename(rstmpPath, rsPath))
 
 	// Finally, rename the temporary file for the data (which we now know
 	// to be valid and complete) to the final filename that we wanted
 	// originally. Only once the rename has succeeded can we be sure that
 	// everything is safely on disk.
+	log.CheckError(r.Close())
 	log.CheckError(os.Rename(tmpPath, w.path))
 }
