@@ -1,3 +1,4 @@
+// +build !windows
 // cmd/bk/fuse.go
 // Copyright(c) 2017 Matt Pharr
 // BSD licensed; see LICENSE for details.
@@ -197,4 +198,25 @@ func (e *dirEntryBackend) ReadAll(ctx context.Context) ([]byte, error) {
 		return b, err
 	}
 	return b, r.Close()
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+func mountImpl(dir string) {
+	backend := GetStorageBackend()
+
+	var nb []namedBackup
+	for name, time := range backend.ListMetadata() {
+		if strings.HasPrefix(name, "backup-") {
+			b := backend.ReadMetadata(name)
+			r, err := NewBackupReader(storage.NewHash(b), backend)
+			if err != nil {
+				log.Error("%s\n", err)
+			}
+			n := strings.TrimPrefix(name, "backup-")
+			nb = append(nb, namedBackup{n, time, r})
+		}
+	}
+
+	mountFUSE(dir, nb)
 }

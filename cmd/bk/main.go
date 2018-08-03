@@ -25,7 +25,7 @@ var log *u.Logger
 
 func usage() {
 	fmt.Printf(`usage: bk [bk flags...] <command> [command args...]
-where <command> is: backup, cat, fsck, help, init, list, mount, restore, restorebits, savebits.
+where <command> is: backup, cat, fsck, help, init, list` + iif(optionFuse, `, mount`) + `, restore, restorebits, savebits.
 Run "bk help" for more detailed help.
 `)
 	os.Exit(1)
@@ -77,10 +77,10 @@ Commands and their options are:
 
   list
       List names of all backups and archived bitstreams.
-
+` + iif(optionFuse, `
   mount <dir>
       Mounts all available backups at the provided directory.
-
+`) + `
   restore <backup name> <target dir>
       Restore the named backup to the specified target directory.
 
@@ -475,22 +475,7 @@ func mount(args []string) {
 		Error("usage: bk mount <dir>\n")
 	}
 
-	backend := GetStorageBackend()
-
-	var nb []namedBackup
-	for name, time := range backend.ListMetadata() {
-		if strings.HasPrefix(name, "backup-") {
-			b := backend.ReadMetadata(name)
-			r, err := NewBackupReader(storage.NewHash(b), backend)
-			if err != nil {
-				log.Error("%s\n", err)
-			}
-			n := strings.TrimPrefix(name, "backup-")
-			nb = append(nb, namedBackup{n, time, r})
-		}
-	}
-
-	mountFUSE(args[0], nb)
+	mountImpl(args[0])
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -580,4 +565,10 @@ func savebits(args []string) {
 
 	log.Print("%s: successfully saved bits", name)
 	backend.LogStats()
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+func iif(option bool, s string) string {
+	if option { return s } else { return `` }
 }
