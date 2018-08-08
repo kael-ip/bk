@@ -366,7 +366,7 @@ func NewBackupReader(hash storage.Hash, backend storage.Backend) (*BackupReader,
 
 func (b *BackupReader) GetEntry(path string) (DirEntry, error) {
 	// Split the path into components.
-	s := strings.Split(filepath.Clean(path), "/")
+	s := strings.Split(path, "/")
 	if len(s) > 1 && s[0] == "" {
 		// Absolute path.
 		s = s[1:]
